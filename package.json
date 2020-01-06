@@ -1,0 +1,26 @@
+{
+  "name": "hilan-autocompleter",
+  "version": "1.0.0",
+  "description": "Auto complete hours in Hilan",
+  "main": "hilan.js",
+  "dependencies": {
+    "bluebird": "3.7.2",
+    "chromedriver": "79.0.0",
+    "commander": "4.1.0",
+    "selenium-webdriver": "4.0.0-alpha.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Kasher/hilan-autocompleter.git"
+  },
+  "author": "Roee Kasher",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kasher/hilan-autocompleter/issues"
+  },
+  "homepage": "https://github.com/Kasher/hilan-autocompleter#readme"
+}
