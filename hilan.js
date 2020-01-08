@@ -18,11 +18,15 @@ async function exitWithSuccessCode(driver, pattern) {
     process.exit(0);
 }
 
+async function waitForFrameAndSwitchToIt(driver, frameId) {
+    const iframeBy = By.id(frameId);
+    const iframe = await driver.wait(until.elementLocated(iframeBy), 1500);
+    await driver.switchTo().frame(iframe);
+}
+
 async function checkForSuccess(driver, pattern) {
-    const alertIframeBy = By.id("alertFrame");
     try {
-        const alertIframe = await driver.wait(until.elementLocated(alertIframeBy), 1500);
-        await driver.switchTo().frame(alertIframe);
+        await waitForFrameAndSwitchToIt(driver, 'alertFrame');
         const message = await driver.findElement(By.id('messagePlace')).getText();
         if (message === pattern) {
             await exitWithSuccessCode(driver, pattern);
@@ -38,7 +42,8 @@ async function fillHours(driver, fieldName, hour) {
     const actions = driver.actions();
     for (let element of elements) {
         const rect = await element.getRect();
-        await actions.move({x: (1 -(rect.width / 2)), y: 1, origin: element})
+        // move the mouse to the left of the element (this calculation is ugly but that's Selenium's API :( ).
+        await actions.move({x: (1 - (rect.width / 2)), y: 1, origin: element})
                 .pause(100)
                 .press()
                 .release()
@@ -75,7 +80,7 @@ async function fillMissingDays() {
     let driver = new Builder().forBrowser('chrome');
     try {
         if (!program.showUI) {
-            driver = driver.setChromeOptions(new chrome.Options().headless());
+            driver = driver.setChromeOptions(new chrome.Options().headless().windowSize({ width: program.width, height: program.height }));
         }
 
         driver = await driver.build();
@@ -85,9 +90,7 @@ async function fillMissingDays() {
         await driver.findElement(By.id('user_nm')).sendKeys(program.username);
         await driver.findElement(By.id('password_nm')).sendKeys(program.password, Key.RETURN);
 
-        await Promise.delay(1000);
-
-        await driver.switchTo().frame(driver.findElement(By.id('mainIFrame')));
+        await waitForFrameAndSwitchToIt(driver, 'mainIFrame');
 
         await waitForElementAndClick(driver, "ctl00_mp_lnkPresenceReproting");
 
@@ -95,6 +98,7 @@ async function fillMissingDays() {
 
         await checkForSuccess(driver, NO_MISSING_DAYS);
 
+        console.log(`Couldn't find an alert with ${NO_MISSING_DAYS}. Filling missing days.`);
         await fillHours(driver, ENTRY_FIELD_NAME, "1000");
         await fillHours(driver, EXIT_FIELD_NAME, "1900");
 
@@ -103,8 +107,11 @@ async function fillMissingDays() {
         await waitForElementAndClick(driver, "btnSave");
 
         await checkForSuccess(driver, SAVED_MISSING_DAYS_SUCCESSFULLY);
-    } finally {
+    } catch (e) {
+        console.log("Failed to update, got the error: ", e);
+
         await driver.quit();
+        process.exit(1);
     }
 };
 
@@ -114,6 +121,8 @@ program
     .option('-p, --password <type>', 'Password to use for login')
     .option('--url <type>', 'Hilan\'s login url')
     .option('--showUI', 'Don\'t use headless Chrome, instead show the UI')
+    .option('--width <width>', 'Set the window\'s width', 1920)
+    .option('--height <height>', 'Set the window\'s height', 1080)
     .parse(process.argv);
 
 if (program.username && program.password) {
