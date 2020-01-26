@@ -85,7 +85,7 @@ async function fillMissingDays() {
 
         driver = await driver.build();
 
-        const url = program.url || "https://broadcom.net.hilan.co.il/login";
+        const url = program.url;
         await driver.get(url);
         await driver.findElement(By.id('user_nm')).sendKeys(program.username);
         await driver.findElement(By.id('password_nm')).sendKeys(program.password, Key.RETURN);
@@ -125,7 +125,7 @@ program
     .option('--height <height>', 'Set the window\'s height', 1080)
     .parse(process.argv);
 
-if (program.username && program.password) {
+if (program.username && program.password && program.url) {
     fillMissingDays();
 } else {
     console.log(program.help());
