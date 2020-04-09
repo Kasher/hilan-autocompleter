@@ -156,7 +156,7 @@ program
     .option('--height <height>', 'Set the window\'s height', 1080)
     .parse(process.argv);
 
-if (program.username && program.password) {
+if (program.username && program.password && program.url) {
     fillMissingDays();
 } else {
     console.log(program.help());
