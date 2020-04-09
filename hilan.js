@@ -9,6 +9,7 @@ const program = require('commander');
 
 const NO_MISSING_DAYS = "לא נמצאו ימים שגויים";
 const SAVED_MISSING_DAYS_SUCCESSFULLY = "הנתונים נשמרו בהצלחה";
+const HEALTH_AFFIDAVIT = "הצהרת בריאות העובד/ת";
 const ENTRY_FIELD_NAME = "ManualEntry";
 const EXIT_FIELD_NAME = "ManualExit";
 
@@ -69,11 +70,31 @@ async function fillAttendance(driver) {
     };
 }
 
-async function waitForElementAndClick(driver, id) {
+async function waitForElementAndClickByClass(driver, elementClass) {
+    const classSelector = `[class*=${elementClass}]`;
+    return await waitForElementAndClick(driver, By.css(classSelector));
+}
+
+async function waitForElementAndClickById(driver, id) {
     const idSelector = `[id*=${id}]`;
-    const by = By.css(`a${idSelector},input${idSelector}`);
+    return await waitForElementAndClick(driver, By.css(`a${idSelector},input${idSelector}`));
+}
+
+async function waitForElementAndClick(driver, by) {
     const element = await driver.wait(until.elementLocated(by), 3000);
     await element.click();
+}
+
+
+async function checkIfTextExists(driver, containerId, text, timeout) {
+    try {
+        const elementBy = By.id(containerId);
+        const containerElementText = await driver.wait(until.elementLocated(elementBy), timeout || 1500).getText();
+        return containerElementText.indexOf(text) !== -1;
+    } catch {
+        console.log(`Couldn't find the text ${text} in element with id ${containerId}`);
+        return false;
+    }
 }
 
 async function fillMissingDays() {
@@ -85,16 +106,26 @@ async function fillMissingDays() {
 
         driver = await driver.build();
 
-        const url = program.url || "https://broadcom.net.hilan.co.il/login";
+        const url = program.url;
         await driver.get(url);
         await driver.findElement(By.id('user_nm')).sendKeys(program.username);
         await driver.findElement(By.id('password_nm')).sendKeys(program.password, Key.RETURN);
 
+        const healthAffidavitExists = await checkIfTextExists(driver, "ctl00", HEALTH_AFFIDAVIT);
+        if (healthAffidavitExists) {
+            // Check the "I approve" checkbox
+            await waitForElementAndClickByClass(driver, "custom-control-label");
+            // Click on "Confirm" button
+            await waitForElementAndClickById(driver, "btnSubmit");
+            // Click on "Continue" button
+            await waitForElementAndClickById(driver, "btnContinue");
+        }
+
         await waitForFrameAndSwitchToIt(driver, 'mainIFrame');
 
-        await waitForElementAndClick(driver, "ctl00_mp_lnkPresenceReproting");
+        await waitForElementAndClickById(driver, "ctl00_mp_lnkPresenceReproting");
 
-        await waitForElementAndClick(driver, "ctl00_mp_RefreshErrorsDays");
+        await waitForElementAndClickById(driver, "ctl00_mp_RefreshErrorsDays");
 
         await checkForSuccess(driver, NO_MISSING_DAYS);
 
@@ -104,7 +135,7 @@ async function fillMissingDays() {
 
         await fillAttendance(driver);
 
-        await waitForElementAndClick(driver, "btnSave");
+        await waitForElementAndClickById(driver, "btnSave");
 
         await checkForSuccess(driver, SAVED_MISSING_DAYS_SUCCESSFULLY);
     } catch (e) {
