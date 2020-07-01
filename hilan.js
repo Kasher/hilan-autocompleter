@@ -9,7 +9,7 @@ const program = require('commander');
 
 const NO_MISSING_DAYS = "לא נמצאו ימים שגויים";
 const SAVED_MISSING_DAYS_SUCCESSFULLY = "הנתונים נשמרו בהצלחה";
-const HEALTH_AFFIDAVIT = "הצהרת בריאות העובד/ת";
+const HEALTH_AFFIDAVIT = "הצהרת בריאות";
 const ENTRY_FIELD_NAME = "ManualEntry";
 const EXIT_FIELD_NAME = "ManualExit";
 
@@ -82,6 +82,8 @@ async function waitForElementAndClickById(driver, id) {
 
 async function waitForElementAndClick(driver, by) {
     const element = await driver.wait(until.elementLocated(by), 3000);
+    await driver.wait(until.elementIsEnabled(element), 3000);
+    await driver.wait(until.elementIsVisible(element), 3000);
     await element.click();
 }
 
@@ -112,11 +114,22 @@ async function fillMissingDays() {
         await driver.findElement(By.id('password_nm')).sendKeys(program.password, Key.RETURN);
 
         const healthAffidavitExists = await checkIfTextExists(driver, "ctl00", HEALTH_AFFIDAVIT);
+        console.log("healthAffidavitExists? ", healthAffidavitExists);
         if (healthAffidavitExists) {
+            console.log("clicking on I approve");
+
             // Check the "I approve" checkbox
             await waitForElementAndClickByClass(driver, "custom-control-label");
+            console.log("clicking on submit! on I approve");
+
+	    //TODO - remove this!
+	    await Promise.delay(1000);
+
             // Click on "Confirm" button
             await waitForElementAndClickById(driver, "btnSubmit");
+
+            console.log("clicking on continue! on I approve");
+
             // Click on "Continue" button
             await waitForElementAndClickById(driver, "btnContinue");
         }
